@@ -16,7 +16,7 @@ La interfaz esta optimizada para movil y preparada para ejecutarse con Capacitor
 - Boton: iniciar sesion
 - Llamada API:
 
-    <https://www.qmobile.es/salerm/app/index.php?acc=1&terusu=TERMINAL01&tercon=salerm2018>
+  [https://www.qmobile.es/salerm/app/index.php?acc=1&amp;terusu=TERMINAL01&amp;tercon=salerm2018](https://www.qmobile.es/salerm/app/index.php?acc=1&terusu=TERMINAL01&tercon=salerm2018)
 
 ### Leer CCBB
 
@@ -24,7 +24,8 @@ La interfaz esta optimizada para movil y preparada para ejecutarse con Capacitor
 - Botones: leer CCBB, nuevo, salir
 - Llamada API:
 
-    <https://www.qmobile.es/salerm/app/index.php?acc=2&socnumccbb=CODIGO_LEIDO>
+https://www.qmobile.es/salerm/app/index.php?acc=2&socnumccbb=CODIGO_LEIDO&tercod=TERCOD
+https://www.qmobile.es/salerm/app/index.php?acc=2&socnumccbb=9222300005399&tercod=TERMINAL01
 
 - Datos mostrados:
 - Nº de socio (categoria)

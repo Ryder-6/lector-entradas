@@ -18,8 +18,14 @@
 
     <main class="app-shell">
       <header class="app-header">
+        <img
+          src="./media/Puente Genil F.C..png"
+          alt="Escudo del Puente Genil F.C."
+          class="club-badge"
+        />
         <p class="kicker">Control de Acceso</p>
-        <h1>Lector de Entradas</h1>
+        <h1>Puente Genil F.C.</h1>
+        <h2>Lector de Entradas</h2>
       </header>
 
       <section id="login-view" class="card view active" aria-label="Login">
@@ -56,15 +62,32 @@
 
         <form id="reader-form" class="form-grid compact">
           <label>
-            Introducir CCBB
-            <input id="ccbb" name="ccbb" type="text" placeholder="Ej: 123456" required />
+            Introducir o escanear CCBB / QR
+            <input
+              id="ccbb"
+              name="ccbb"
+              type="text"
+              placeholder="Ej: 1234567891234"
+              inputmode="text"
+              autocomplete="off"
+              required
+            />
           </label>
 
           <div class="actions-row">
             <button type="submit" class="btn btn-primary">Leer CCBB</button>
+            <button id="btn-scan" type="button" class="btn btn-secondary">Escanear QR / barras</button>
             <button id="btn-nuevo" type="button" class="btn btn-secondary">Nuevo</button>
           </div>
         </form>
+
+        <section id="scanner-panel" class="scanner-panel" hidden aria-label="Escáner">
+          <video id="scanner-video" class="scanner-video" playsinline muted></video>
+          <p id="scanner-hint" class="scanner-hint" aria-live="polite">
+            Apunta la cámara al código.
+          </p>
+          <button id="btn-stop-scan" type="button" class="btn btn-danger btn-inline">Cerrar cámara</button>
+        </section>
 
         <article id="result-card" class="result-card" hidden>
           <p><strong>Nº de socio (categoría):</strong> <span id="r-socio">-</span></p>

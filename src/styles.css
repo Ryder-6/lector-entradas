@@ -63,6 +63,15 @@ body {
 
 .app-header {
   margin-bottom: 12px;
+  text-align: center;
+}
+
+.club-badge {
+  display: block;
+  width: min(132px, 32vw);
+  height: auto;
+  margin: 0 auto 10px;
+  filter: drop-shadow(0 8px 18px rgba(18, 33, 15, 0.18));
 }
 
 .kicker {
@@ -155,7 +164,7 @@ input:focus {
 .actions-row {
   display: grid;
   gap: 10px;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
 }
 
 .btn {
@@ -192,6 +201,39 @@ input:focus {
   width: 100%;
   background: color-mix(in srgb, var(--danger) 85%, #fff);
   color: #fff;
+}
+
+.btn-inline {
+  margin-top: 0;
+}
+
+.scanner-panel {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  background: #f7fbf5;
+  display: grid;
+  gap: 10px;
+}
+
+.scanner-video {
+  width: 100%;
+  min-height: 220px;
+  border-radius: 10px;
+  background: #0d1510;
+  object-fit: cover;
+}
+
+.scanner-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.scanner-hint.error {
+  color: var(--danger);
 }
 
 .result-card {
