@@ -1,6 +1,10 @@
 :root {
   --bg: #f5f7ef;
   --panel: rgba(255, 255, 255, 0.88);
+  --reader-neutral: linear-gradient(165deg, rgba(218, 239, 255, 0.96) 0%, rgba(189, 221, 248, 0.94) 100%);
+  --reader-valid: linear-gradient(165deg, rgba(217, 249, 223, 0.96) 0%, rgba(166, 234, 177, 0.95) 100%);
+  --reader-warning: linear-gradient(165deg, rgba(255, 247, 194, 0.98) 0%, rgba(247, 224, 122, 0.95) 100%);
+  --reader-invalid: linear-gradient(165deg, rgba(255, 215, 215, 0.98) 0%, rgba(246, 171, 171, 0.96) 100%);
   --text: #12210f;
   --muted: #5d6b57;
   --primary: #0d7a3d;
@@ -66,12 +70,24 @@ body {
   text-align: center;
 }
 
+.badges-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
 .club-badge {
   display: block;
   width: min(132px, 32vw);
   height: auto;
-  margin: 0 auto 10px;
+  border-radius: 18px;
   filter: drop-shadow(0 8px 18px rgba(18, 33, 15, 0.18));
+}
+
+.qanet-badge {
+  width: min(100px, 24vw);
 }
 
 .kicker {
@@ -106,21 +122,40 @@ h2 {
   border: 1px solid var(--border);
   border-radius: 18px;
   padding: 18px;
+  min-height: 420px;
   box-shadow: var(--shadow);
   transform: translateY(8px);
   opacity: 0;
+  display: none;
   pointer-events: none;
-  transition: opacity 220ms ease, transform 220ms ease;
-}
-
-.view + .view {
-  margin-top: 10px;
+  transition: opacity 220ms ease, transform 220ms ease, background 240ms ease;
 }
 
 .view.active {
+  display: block;
   transform: translateY(0);
   opacity: 1;
   pointer-events: auto;
+}
+
+#reader-view {
+  background: var(--reader-neutral);
+}
+
+#reader-view.reader-state-neutral {
+  background: var(--reader-neutral);
+}
+
+#reader-view.reader-state-valid {
+  background: var(--reader-valid);
+}
+
+#reader-view.reader-state-warning {
+  background: var(--reader-warning);
+}
+
+#reader-view.reader-state-invalid {
+  background: var(--reader-invalid);
 }
 
 .form-grid {
@@ -207,6 +242,11 @@ input:focus {
   margin-top: 0;
 }
 
+.actions-row .btn-danger.scan-active {
+  margin-top: 0;
+  width: auto;
+}
+
 .scanner-panel {
   margin-top: 12px;
   border: 1px solid var(--border);
@@ -241,7 +281,7 @@ input:focus {
   border-radius: 12px;
   padding: 12px;
   margin-top: 12px;
-  background: #fafcf8;
+  background: rgba(255, 255, 255, 0.74);
   display: grid;
   gap: 6px;
 }
@@ -262,6 +302,20 @@ input:focus {
   color: var(--danger);
 }
 
+.app-footer {
+  margin-top: 16px;
+  padding: 12px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
+
+.app-footer p {
+  margin: 0;
+  line-height: 1.2;
+}
+
 @media (max-width: 420px) {
   .app-shell {
     width: 95vw;
@@ -271,6 +325,7 @@ input:focus {
   .card {
     padding: 14px;
     border-radius: 14px;
+    min-height: 390px;
   }
 
   .actions-row {

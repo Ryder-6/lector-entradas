@@ -1,3 +1,6 @@
+import { Capacitor } from '@capacitor/core';
+import { Camera } from '@capacitor/camera';
+
 const API_BASE = 'https://www.qmobile.es/salerm/app/index.php';
 const SESSION_KEY = 'lectorEntradasSesion';
 const TERMINAL_CODE_KEY = 'lectorEntradasTerminal';
@@ -23,7 +26,6 @@ const rMarcaje = document.getElementById('r-marcaje');
 const rEstado = document.getElementById('r-estado');
 
 const btnScan = document.getElementById('btn-scan');
-const btnStopScan = document.getElementById('btn-stop-scan');
 const btnNuevo = document.getElementById('btn-nuevo');
 const btnSalir = document.getElementById('btn-salir');
 
@@ -32,9 +34,21 @@ let scannerDetector = null;
 let scannerActive = false;
 let scannerFrameId = 0;
 
+const READER_STATE_CLASSES = [
+  'reader-state-neutral',
+  'reader-state-valid',
+  'reader-state-warning',
+  'reader-state-invalid'
+];
+
 function setActiveView(isLoggedIn) {
   loginView.classList.toggle('active', !isLoggedIn);
   readerView.classList.toggle('active', isLoggedIn);
+}
+
+function setReaderVisualState(state) {
+  readerView.classList.remove(...READER_STATE_CLASSES);
+  readerView.classList.add(`reader-state-${state}`);
 }
 
 function setStatus(node, message, isError = false) {
@@ -59,46 +73,72 @@ function decodeHtmlEntities(value) {
   return textarea.value;
 }
 
+function resolveEntryState(data) {
+  const repeticiones = Number(data.MARREP ?? data.marrep ?? 0);
+  const hasEntryData = [
+    data.SOCNUM,
+    data.socnum,
+    data.CATEGORIA,
+    data.categoria,
+    data.SOCNOM,
+    data.nom,
+    data.nombre,
+    data.SOCAPE,
+    data.ape,
+    data.apellidos,
+    data.MAREST,
+    data.marcaje,
+    data.mark,
+    data.marca,
+    data.MARFECHOR,
+    data.marfechor,
+    data.MARREP,
+    data.marrep
+  ].some((value) => value !== undefined && value !== null && String(value).trim() !== '');
+  const entradaInvalida = !hasEntryData;
+
+  if (entradaInvalida) {
+    return {
+      estado: 'Entrada inválida',
+      repeticiones,
+      visualState: 'invalid'
+    };
+  }
+
+  if (repeticiones >= 1) {
+    return {
+      estado: `Entrada válida (ya usada ${repeticiones} ${repeticiones === 1 ? 'vez' : 'veces'})`,
+      repeticiones,
+      visualState: repeticiones > 1 ? 'warning' : 'valid'
+    };
+  }
+
+  return {
+    estado: 'Entrada válida',
+    repeticiones,
+    visualState: 'valid'
+  };
+}
+
 function normalizeApiData(data) {
   const socio = data.SOCNUM || data.socnum || data.socio || data.numeroSocio || data.nSocio || '';
   const categoria = data.CATEGORIA || data.categoria || data.cat || '';
   const nombre = data.SOCNOM || data.nom || data.nombre || data.name || '';
   const apellidos = data.SOCAPE || data.ape || data.apellidos || data.surname || '';
-  const tip = data.TIP ?? data.tip;
-  const entradaHoy = data.SOCENTOTRDIA ?? data.socentotrdia;
-  const socioBloqueado = data.SOCBAN ?? data.socban;
-  const entradaBloqueada = data.ENTBAN ?? data.entban;
-  const repeticiones = Number(data.MARREP ?? data.marrep ?? 0);
   const rawMarcaje = data.MAREST || data.marcaje || data.mark || data.marca || '';
   const marcajeText = stripHtmlTags(decodeHtmlEntities(rawMarcaje));
   const fechaHora = data.MARFECHOR || data.marfechor || data.fechaHora || '';
+  const entryState = resolveEntryState(data);
 
   const marcaje = marcajeText || (fechaHora ? `Leído el ${fechaHora}` : '-');
-
-  let estado = data.estado || data.status || '';
-
-  if (!estado) {
-    if (Number(entradaBloqueada) === 1) {
-      estado = 'Entrada bloqueada';
-    } else if (Number(socioBloqueado) === 1) {
-      estado = 'Socio bloqueado';
-    } else if (tip !== undefined) {
-      estado = Number(tip) === 0 ? 'Lectura correcta' : `Tipo ${tip}`;
-    } else {
-      estado = '-';
-    }
-  }
-
-  if (repeticiones >= 1) {
-    estado = `${estado} · Ya usada ${repeticiones} ${repeticiones === 1 ? 'vez' : 'veces'}`;
-  }
 
   return {
     socio: categoria && !String(socio).includes('(') ? `${socio || '-'} (${categoria})` : socio || '-',
     nombre: `${nombre} ${apellidos}`.trim() || '-',
     marcaje,
-    estado,
-    repeticiones,
+    estado: entryState.estado,
+    repeticiones: entryState.repeticiones,
+    visualState: entryState.visualState,
     fechaHora
   };
 }
@@ -199,6 +239,21 @@ function setScannerHint(message, isError = false) {
   scannerHint.classList.toggle('error', isError);
 }
 
+function updateScanButton() {
+  if (!btnScan) return;
+
+  if (scannerActive) {
+    btnScan.textContent = 'Cerrar cámara';
+    btnScan.classList.remove('btn-secondary');
+    btnScan.classList.add('btn-danger', 'scan-active');
+    return;
+  }
+
+  btnScan.textContent = 'Escanear';
+  btnScan.classList.remove('btn-danger', 'scan-active');
+  btnScan.classList.add('btn-secondary');
+}
+
 function normalizeScannedValue(rawValue) {
   const value = String(rawValue ?? '').trim();
   if (!value) return '';
@@ -231,6 +286,33 @@ async function getCameraPermissionState() {
 }
 
 async function requestCameraPermission() {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const permission = await Camera.checkPermissions();
+
+      if (permission.camera === 'granted') {
+        return true;
+      }
+
+      const requestedPermission = await Camera.requestPermissions({ permissions: ['camera'] });
+
+      if (requestedPermission.camera === 'granted') {
+        setStatus(readerStatus, 'Permiso de cámara concedido. Ya puedes escanear.');
+        return true;
+      }
+
+      setStatus(
+        readerStatus,
+        'Permiso de cámara denegado. Actívalo en Ajustes > Apps > lector-entradas > Permisos.',
+        true
+      );
+      return false;
+    } catch (error) {
+      setStatus(readerStatus, `No se pudo solicitar el permiso de cámara: ${error.message}`, true);
+      return false;
+    }
+  }
+
   if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
     return false;
   }
@@ -301,6 +383,7 @@ function stopScanner() {
   }
 
   setScannerHint('Apunta la cámara al código.');
+  updateScanButton();
 }
 
 async function scanCodes() {
@@ -356,20 +439,7 @@ async function startScanner() {
   }
 
   try {
-    const preferredFormats = [
-      'qr_code',
-      'ean_13',
-      'ean_8',
-      'code_128',
-      'code_39',
-      'upc_a',
-      'upc_e',
-      'itf',
-      'codabar',
-      'pdf417',
-      'data_matrix',
-      'aztec'
-    ];
+    const preferredFormats = ['ean_13'];
 
     const supportedFormats = BarcodeDetector.getSupportedFormats
       ? await BarcodeDetector.getSupportedFormats()
@@ -379,7 +449,7 @@ async function startScanner() {
 
     scannerDetector = new BarcodeDetector({
       formats: detectorFormats.length ? detectorFormats : preferredFormats
-    });
+    }); 
 
     scannerStream = await navigator.mediaDevices.getUserMedia({
       video: {
@@ -393,7 +463,8 @@ async function startScanner() {
     await scannerVideo.play();
 
     scannerActive = true;
-    setScannerHint('Apunta la cámara al código de barras o QR.');
+    updateScanButton();
+    setScannerHint('Apunta la cámara a un código EAN-13.');
     setStatus(readerStatus, 'Escáner activo');
     scanCodes();
   } catch (error) {
@@ -414,6 +485,7 @@ async function startScanner() {
 
 function openReader() {
   setActiveView(true);
+  setReaderVisualState('neutral');
   clearResult();
   setStatus(loginStatus, '');
   setStatus(readerStatus, 'Listo para leer CCBB');
@@ -425,6 +497,7 @@ function closeSession() {
   stopScanner();
   localStorage.removeItem(SESSION_KEY);
   localStorage.removeItem(TERMINAL_CODE_KEY);
+  setReaderVisualState('neutral');
   setActiveView(false);
   loginForm.reset();
   readerForm.reset();
@@ -488,6 +561,9 @@ readerForm.addEventListener('submit', async (event) => {
     return;
   }
 
+  stopScanner();
+  clearResult();
+  setReaderVisualState('neutral');
   setStatus(readerStatus, 'Consultando entrada...');
 
   try {
@@ -503,6 +579,7 @@ readerForm.addEventListener('submit', async (event) => {
 
     if (!parsed.hasData) {
       clearResult();
+      setReaderVisualState('invalid');
       setStatus(readerStatus, parsed.warningText || 'Respuesta no válida del servidor', true);
       return;
     }
@@ -514,8 +591,11 @@ readerForm.addEventListener('submit', async (event) => {
     rMarcaje.textContent = cleanValue(viewData.marcaje);
     rEstado.textContent = cleanValue(viewData.estado);
     resultCard.hidden = false;
+    setReaderVisualState(viewData.visualState);
 
-    if (viewData.repeticiones >= 1) {
+    if (viewData.visualState === 'invalid') {
+      setStatus(readerStatus, 'Entrada inválida', true);
+    } else if (viewData.repeticiones >= 1) {
       setStatus(
         readerStatus,
         `Aviso: esta entrada ya se había leído antes (${viewData.repeticiones} ${viewData.repeticiones === 1 ? 'uso' : 'usos'}).`,
@@ -528,6 +608,7 @@ readerForm.addEventListener('submit', async (event) => {
     }
   } catch (error) {
     clearResult();
+    setReaderVisualState('invalid');
     setStatus(readerStatus, `No se pudo leer CCBB: ${error.message}`, true);
   }
 });
@@ -536,22 +617,18 @@ btnScan.addEventListener('click', async () => {
   if (scannerActive) {
     stopScanner();
     setStatus(readerStatus, 'Escáner detenido');
+    ccbbInput.focus();
     return;
   }
 
   await startScanner();
 });
 
-btnStopScan.addEventListener('click', () => {
-  stopScanner();
-  setStatus(readerStatus, 'Escáner detenido');
-  ccbbInput.focus();
-});
-
 btnNuevo.addEventListener('click', () => {
   stopScanner();
   readerForm.reset();
   clearResult();
+  setReaderVisualState('neutral');
   setStatus(readerStatus, 'Listo para una nueva lectura');
   ccbbInput.focus();
 });
@@ -566,3 +643,5 @@ if (localStorage.getItem(SESSION_KEY) === '1') {
   localStorage.removeItem(TERMINAL_CODE_KEY);
   setActiveView(false);
 }
+
+updateScanButton();

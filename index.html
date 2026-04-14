@@ -18,14 +18,20 @@
 
     <main class="app-shell">
       <header class="app-header">
-        <img
-          src="./media/Puente Genil F.C..png"
-          alt="Escudo del Puente Genil F.C."
-          class="club-badge"
-        />
+        <div class="badges-row">
+          <img
+            src="./media/Puente Genil F.C.png"
+            alt="Escudo del Puente Genil F.C."
+            class="club-badge"
+          />
+          <img
+            src="./media/Qanet.png"
+            alt="Qanet"
+            class="club-badge qanet-badge"
+          />
+        </div>
         <p class="kicker">Control de Acceso</p>
-        <h1>Puente Genil F.C.</h1>
-        <h2>Lector de Entradas</h2>
+
       </header>
 
       <section id="login-view" class="card view active" aria-label="Login">
@@ -58,7 +64,6 @@
       </section>
 
       <section id="reader-view" class="card view" aria-label="Leer CCBB">
-        <h2>Leer CCBB</h2>
 
         <form id="reader-form" class="form-grid compact">
           <label>
@@ -76,7 +81,7 @@
 
           <div class="actions-row">
             <button type="submit" class="btn btn-primary">Leer CCBB</button>
-            <button id="btn-scan" type="button" class="btn btn-secondary">Escanear QR / barras</button>
+            <button id="btn-scan" type="button" class="btn btn-secondary">Escanear</button>
             <button id="btn-nuevo" type="button" class="btn btn-secondary">Nuevo</button>
           </div>
         </form>
@@ -86,7 +91,6 @@
           <p id="scanner-hint" class="scanner-hint" aria-live="polite">
             Apunta la cámara al código.
           </p>
-          <button id="btn-stop-scan" type="button" class="btn btn-danger btn-inline">Cerrar cámara</button>
         </section>
 
         <article id="result-card" class="result-card" hidden>
@@ -100,6 +104,10 @@
 
         <button id="btn-salir" type="button" class="btn btn-danger">Salir</button>
       </section>
+
+      <footer class="app-footer">
+        <p>Realizado por Qanet - Redes y Componentes SL</p>
+      </footer>
     </main>
 
     <script type="module" src="./src/main.js"></script>
