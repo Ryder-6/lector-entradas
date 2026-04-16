@@ -257,12 +257,46 @@ input:focus {
   gap: 10px;
 }
 
+.scanner-stage {
+  position: relative;
+}
+
 .scanner-video {
   width: 100%;
   min-height: 220px;
   border-radius: 10px;
   background: #0d1510;
   object-fit: cover;
+}
+
+.scanner-guide {
+  position: absolute;
+  left: 12%;
+  top: 64%;
+  width: 76%;
+  height: 18%;
+  border: 2px solid rgba(255, 245, 182, 0.96);
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 999px rgba(8, 13, 10, 0.24),
+    inset 0 0 0 1px rgba(18, 33, 15, 0.16);
+  pointer-events: none;
+}
+
+.scanner-guide-label {
+  position: absolute;
+  left: 50%;
+  top: calc(64% - 28px);
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255, 250, 215, 0.94);
+  color: #24321e;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  pointer-events: none;
 }
 
 .scanner-hint {

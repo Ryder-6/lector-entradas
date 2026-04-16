@@ -82,21 +82,27 @@
           <div class="actions-row">
             <button type="submit" class="btn btn-primary">Leer CCBB</button>
             <button id="btn-scan" type="button" class="btn btn-secondary">Escanear</button>
+            <button id="btn-federacion" type="button" class="btn btn-secondary">Leer federación</button>
             <button id="btn-nuevo" type="button" class="btn btn-secondary">Nuevo</button>
           </div>
         </form>
 
         <section id="scanner-panel" class="scanner-panel" hidden aria-label="Escáner">
-          <video id="scanner-video" class="scanner-video" playsinline muted></video>
+          <div class="scanner-stage">
+            <video id="scanner-video" class="scanner-video" playsinline muted></video>
+            <div id="scanner-guide" class="scanner-guide" hidden aria-hidden="true"></div>
+            <p id="scanner-guide-label" class="scanner-guide-label" hidden>Coloca el texto entre las guías.</p>
+          </div>
           <p id="scanner-hint" class="scanner-hint" aria-live="polite">
             Apunta la cámara al código.
           </p>
         </section>
 
         <article id="result-card" class="result-card" hidden>
-          <p><strong>Nº de socio (categoría):</strong> <span id="r-socio">-</span></p>
-          <p><strong>Nombre y apellidos:</strong> <span id="r-nombre">-</span></p>
+          <p><strong>Nº socio (categoría):</strong> <span id="r-socio">-</span></p>
+          <p><strong>Nombre:</strong> <span id="r-nombre">-</span></p>
           <p><strong>Marcaje:</strong> <span id="r-marcaje">-</span></p>
+          <p><strong>Posición:</strong> <span id="r-posicion">-</span></p>
           <p><strong>Estado:</strong> <span id="r-estado">-</span></p>
         </article>
 
