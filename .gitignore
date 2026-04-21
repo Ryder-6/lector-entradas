@@ -3,8 +3,11 @@ node_modules/
 
 # Build output
 dist/
+coverage/
+*.tsbuildinfo
 
 # Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -19,10 +22,14 @@ Thumbs.db
 # Environment files
 .env
 .env.*
-
-# Capacitor native platforms (optional: keep ignored until needed in repo)
-android/
-ios/
+!.env.example
 
 # Capacitor generated files
 .capacitor/
+
+# Native build artifacts (keep native source tracked)
+android/.gradle/
+android/build/
+android/app/build/
+ios/DerivedData/
+ios/build/
