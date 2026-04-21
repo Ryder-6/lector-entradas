@@ -1,58 +1,90 @@
 # Lector de Entradas (Capacitor)
 
-Aplicacion movil para lectura de entradas de futbol con dos vistas:
+Aplicacion movil/web para control de acceso en futbol, preparada con Vite + Capacitor.
 
-1. Login
-2. Lectura de CCBB
+La app incluye dos vistas principales:
 
-La interfaz esta optimizada para movil y preparada para ejecutarse con Capacitor en Android/iOS.
+1. Login de terminal
+2. Lectura de entradas (manual y por camara)
 
-## Funcionalidad
+## Estado actual
 
-### Login
+Funcionalidades implementadas actualmente:
 
-- Campos: usuario, contrasena
-- Check: mantener sesion iniciada
-- Boton: iniciar sesion
-- Llamada API:
+- Login contra API remota con validacion de respuesta.
+- Opcion "Mantener sesion iniciada" usando localStorage.
+- Consulta de entrada por CCBB manual.
+- Escaneo por camara de codigos de barras (EAN-13, Code 128, Codabar/code_23) cuando el dispositivo soporta BarcodeDetector.
+- Modo "Leer federacion" con OCR (tesseract.js) para detectar patrones tipo `*DDMMZAAA*`.
+- Normalizacion de datos de API y visualizacion de estado de entrada.
+- Estado visual por resultado: neutro, valido, aviso por reuso, invalido.
 
-  [https://www.qmobile.es/salerm/app/index.php?acc=1&amp;terusu=TERMINAL01&amp;tercon=salerm2018](https://www.qmobile.es/salerm/app/index.php?acc=1&terusu=TERMINAL01&tercon=salerm2018)
+## Flujo funcional
 
-  ejemplo de resultado esperado:
-  [{"TERBAN":1,"TERCOD":"TERMINAL01","TERNOM":"TERMINAL 1","TERCON":"salerm2018"}]
+### 1) Login
 
-### Leer CCBB
+Campos y acciones:
 
-- Campo: introducir CCBB
-- Botones: leer CCBB, nuevo, salir
-- Llamada API:
+- Usuario
+- Contraseña
+- Mantener sesion iniciada
+- Boton "Iniciar sesion"
 
-https://www.qmobile.es/salerm/app/index.php?acc=2&socnumccbb=CODIGO_LEIDO&tercod=TERCOD
-https://www.qmobile.es/salerm/app/index.php?acc=2&socnumccbb=9222300005399&tercod=TERMINAL01
+Llamada API usada por la app:
 
+`https://www.qmobile.es/salerm/app/index.php?acc=1&terusu=USUARIO&tercon=CONTRASENA`
 
-ejemplo de resultado esperado:
-[{"TIP":0,"SOCBAN":1,"ENTBAN":1,"CATDNIEST":0,"SOCNOM":"Mariam Baena Moreno","SOCNUM":"5051 (GENERAL)","MAREST":"(Alta)<\/span>","MARESTBAN":0,"MARFECHOR":"09\/04\/2026 11:04:06","MARREP":0}]
+Ejemplo de respuesta valida:
 
-MARREP: 0 (entrada valida)
-MARREP: 1 (entrada valida pero ya usada UNA vez)
-MARREP: +1 (usada mas de una vez, warning)
+`[{"TERBAN":1,"TERCOD":"TERMINAL01","TERNOM":"TERMINAL 1","TERCON":"CONTRASENA"}]`
 
-- Datos mostrados:
-- Nº de socio (categoria)
-- Nombre y apellidos
+Reglas de validacion en cliente:
+
+- `TERBAN` debe ser `1`.
+- Si `TERCOD` viene informado, debe coincidir con el usuario (sin distinguir mayusculas/minusculas).
+- Si `TERCON` viene informado, debe coincidir con la contraseña.
+
+### 2) Lectura de entradas
+
+Opciones disponibles:
+
+- Introducir CCBB manualmente y pulsar "Leer CCBB".
+- Abrir camara con "Escanear" (modo codigo de barras).
+- Abrir camara con "Leer federacion" (modo OCR en zona guiada).
+- "Nuevo" para limpiar formulario y resultado.
+- "Salir" para cerrar sesion local.
+
+Llamada API usada por la app:
+
+`https://www.qmobile.es/salerm/app/index.php?acc=2&socnumccbb=CODIGO_LEIDO&tercod=TERCOD`
+
+Ejemplo de respuesta:
+
+`[{"TIP":0,"SOCBAN":1,"ENTBAN":1,"SOCNOM":"nombre","SOCNUM":"5051 (GENERAL)","MAREST":"(Alta)</span>","MARFECHOR":"09/04/2026 11:04:06","MARREP":0}]`
+
+Interpretacion de `MARREP`:
+
+- `0`: entrada valida sin usos previos.
+- `1`: entrada valida, ya usada una vez.
+- `>1`: entrada valida, usada multiples veces (aviso).
+
+Datos mostrados en pantalla:
+
+- N. socio (categoria)
+- Nombre
 - Marcaje
+- Posicion
 - Estado
 
 ## Requisitos
 
-- Node.js 20+
-- npm 10+
+- Node.js 20 o superior
+- npm 10 o superior
 
-Para compilar en movil con Capacitor:
+Para compilacion movil con Capacitor:
 
 - Android Studio (Android)
-- Xcode (iOS, solo en macOS)
+- Xcode (iOS, solo macOS)
 
 ## Instalacion
 
@@ -60,49 +92,62 @@ Para compilar en movil con Capacitor:
 npm install
 ```
 
-## Desarrollo web
+## Scripts
 
 ```bash
-npm run dev
-```
-
-## Build
-
-```bash
-npm run build
+npm run dev         # servidor Vite (puerto 5173)
+npm run build       # build web en dist
+npm run preview     # previsualizar build
+npm run cap:sync    # sincronizar proyecto Capacitor
+npm run cap:android # abrir Android Studio
+npm run cap:ios     # abrir Xcode
 ```
 
 ## Uso con Capacitor
 
-1. Genera build web:
+1. Generar build web:
 
 ```bash
 npm run build
 ```
 
-1. Sincroniza Capacitor:
+2. Sincronizar assets/plugins con Capacitor:
 
 ```bash
-npx cap sync
+npm run cap:sync
 ```
 
-1. Agrega plataformas (solo la primera vez):
+3. (Primera vez) agregar plataforma:
 
 ```bash
 npx cap add android
 npx cap add ios
 ```
 
-1. Abre proyecto nativo:
+4. Abrir proyecto nativo:
 
 ```bash
-npx cap open android
-npx cap open ios
+npm run cap:android
+npm run cap:ios
 ```
+
+## Notas de camara y permisos
+
+- En web, la camara requiere contexto seguro (HTTPS o localhost).
+- En app nativa, se solicita permiso de camara via plugin de Capacitor Camera.
+- Si no hay soporte de BarcodeDetector, el modo "Escanear" puede no estar disponible en algunos dispositivos/navegadores.
+
+## Stack y dependencias principales
+
+- Vite
+- Capacitor 7 (`@capacitor/core`, `@capacitor/android`, `@capacitor/cli`)
+- `@capacitor/camera` para permisos/capacidad de camara en nativo
+- `tesseract.js` para OCR en modo federacion
 
 ## Estructura principal
 
-- index.html: layout con las dos vistas
-- src/main.js: logica de login, sesion y consulta CCBB
-- src/styles.css: estilos responsive para movil
-- capacitor.config.ts: configuracion de Capacitor
+- `index.html`: layout de login y lector
+- `src/main.js`: logica de login, sesion, escaner y consultas API
+- `src/styles.css`: estilos responsive orientados a movil
+- `capacitor.config.ts`: configuracion de Capacitor (`webDir: dist`)
+- `vite.config.js`: servidor Vite en host abierto y puerto `5173`
