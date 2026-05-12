@@ -6,22 +6,35 @@ Sistema de control de acceso para eventos del **Puente Genil F.C.**, desarrollad
 
 ## Descripción
 
-Salerm App es una aplicación web progresiva (PWA) empaquetada como app nativa Android mediante Capacitor. Permite al personal de control de acceso verificar entradas de socios en tiempo real, escaneando códigos de barras con la cámara del dispositivo o introduciéndolos manualmente.
+Salerm App es una aplicación web progresiva (PWA) empaquetada como app nativa Android mediante Capacitor. Permite al personal de control de acceso verificar entradas de socios en tiempo real, escaneando códigos de barras con la cámara del dispositivo, mediante scaner de codigo de barras o  introduciéndolos manualmente.
 
 ---
 
 ## Capturas de pantalla
 
-> *(Pendiente de capturas de pantalla)*
->
-> Sugerencias:
->
-> - Pantalla de login
-> - Vista del lector con campo CCBB
-> - Escáner activo con la cámara
-> - Tarjeta de resultado con entrada válida
-> - Tarjeta de resultado con entrada ya usada
-> - Tarjeta de resultado con entrada inválida o ya usada
+### Login
+
+<img src="media/cap-pantalla/cp-login.jpeg" alt="Pantalla de login" width="50%" />
+
+### Lector limpio
+
+<img src="media/cap-pantalla/cp-clean.jpeg" alt="Vista principal del lector" width="50%" />
+
+### Escaner activo
+
+<img src="media/cap-pantalla/cp-camscan.jpeg" alt="Escaner con camara activa" width="50%" />
+
+### Entrada valida
+
+<img src="media/cap-pantalla/cp-valid.jpeg" alt="Resultado de entrada valida" width="50%" />
+
+### Entrada ya usada
+
+<img src="media/cap-pantalla/cp-used.jpeg" alt="Resultado de entrada ya usada" width="50%" />
+
+### Entrada invalida
+
+<img src="media/cap-pantalla/cp-invalid.jpeg" alt="Resultado de entrada invalida" width="50%" />
 
 ---
 
@@ -37,8 +50,17 @@ Salerm App es una aplicación web progresiva (PWA) empaquetada como app nativa A
   - ITF (Interleaved 2 of 5)
   - UPC-A, UPC-E
   - QR Code, Data Matrix, PDF417, Aztec
-- **Resultado visual inmediato** — Muestra nombre, nº de socio, categoría, marcaje, posición y estado de la entrada.
-- **Indicador de estado** — Retroalimentación visual de entrada válida, inválida o ya registrada.
+- **Resultado visual inmediato** 
+  - Nombre
+  - Nº de socio,
+  - Categoría,
+  - Marcaje
+  - Posición
+  - Estado de la entrada.
+- **Indicador de estado** — Retroalimentación visual
+  - Entrada válida -> Verde
+  - Ya utilizada -> Amarillo
+  - Invalida -> Rojo
 
 ---
 
@@ -84,7 +106,7 @@ npx cap sync
 npm run cap:android
 ```
 
-Desde Android Studio: **Build → Generate Signed Bundle / APK** para obtener el instalador.  
+Desde Android Studio: **Build → Generate Signed Bundle / APK** para obtener el instalador.
 Copia el `.apk` resultante a la carpeta `releases/` con el nombre `salerm-app-vX.Y.Z.apk` y actualiza la tabla de versiones anterior.
 
 ---

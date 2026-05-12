@@ -37,6 +37,7 @@ android/app/build/
 ios/DerivedData/
 ios/build/
 
+*.csv
 # APK releases (tracked intentionally in releases/)
 *.apk
 !releases/*.apk
