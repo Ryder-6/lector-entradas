@@ -131,6 +131,38 @@ npm run cap:android
 npm run cap:ios
 ```
 
+5. Generar APK (Android)
+
+5.1 Desde Android Studio: Build > Build Bundle(s) / APK(s) > Build APK(s)
+
+- Para APK debug, selecciona el build variant "debug".
+  Salida esperada: `android/app/build/outputs/apk/debug/app-debug.apk`
+
+- Para APK release, selecciona el build variant "release" y configura la firma con tu keystore.
+  Salida esperada: `android/app/build/outputs/apk/release/app-release-unsigned.apk`
+
+5.2 Por comandos Gradle, desde la raiz del proyecto:
+
+```bash
+cd android
+./gradlew assembleDebug
+```
+
+Salida esperada:
+
+`android/app/build/outputs/apk/debug/app-debug.apk`
+
+```bash
+cd android
+./gradlew assembleRelease
+```
+
+Salida esperada:
+
+`android/app/build/outputs/apk/release/app-release-unsigned.apk`
+
+Nota: para publicar en Google Play, la APK/AAB de release debe firmarse con tu keystore.
+
 ## Notas de camara y permisos
 
 - En web, la camara requiere contexto seguro (HTTPS o localhost).
