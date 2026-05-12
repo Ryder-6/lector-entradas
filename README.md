@@ -1,185 +1,125 @@
-# Lector de Entradas (Capacitor)
+# Salerm App — Control de Acceso
 
-Aplicacion movil/web para control de acceso en futbol, preparada con Vite + Capacitor.
+Sistema de control de acceso para eventos del **Puente Genil F.C.**, desarrollado por **Qanet - Redes y Componentes SL**. Dev. Javier Rider Jimenez
 
-La app incluye dos vistas principales:
+---
 
-1. Login de terminal
-2. Lectura de entradas (manual y por camara)
+## Descripción
 
-## Estado actual
+Salerm App es una aplicación web progresiva (PWA) empaquetada como app nativa Android mediante Capacitor. Permite al personal de control de acceso verificar entradas de socios en tiempo real, escaneando códigos de barras con la cámara del dispositivo o introduciéndolos manualmente.
 
-Funcionalidades implementadas actualmente:
+---
 
-- Login contra API remota con validacion de respuesta.
-- Opcion "Mantener sesion iniciada" usando localStorage.
-- Consulta de entrada por CCBB manual.
-- Escaneo por camara de codigos de barras (EAN-13, Code 128, Codabar/code_23) cuando el dispositivo soporta BarcodeDetector.
-- Modo "Leer federacion" con OCR (tesseract.js) para detectar patrones tipo `*DDMMZAAA*`.
-- Normalizacion de datos de API y visualizacion de estado de entrada.
-- Estado visual por resultado: neutro, valido, aviso por reuso, invalido.
+## Capturas de pantalla
 
-## Flujo funcional
+> *(Pendiente de capturas de pantalla)*
+>
+> Sugerencias:
+>
+> - Pantalla de login
+> - Vista del lector con campo CCBB
+> - Escáner activo con la cámara
+> - Tarjeta de resultado con entrada válida
+> - Tarjeta de resultado con entrada ya usada
+> - Tarjeta de resultado con entrada inválida o ya usada
 
-### 1) Login
+---
 
-Campos y acciones:
+## Funcionalidades principales
 
-- Usuario
-- Contraseña
-- Mantener sesion iniciada
-- Boton "Iniciar sesion"
+- **Login con sesión persistente** — Opción de mantener la sesión iniciada entre usos.
+- **Lectura manual** — Introduce el código CCBB directamente desde el teclado.
+- **Escáner de cámara** — Detección automática de códigos mediante la API `BarcodeDetector` del navegador.
+- **Múltiples formatos de código de barras soportados:**
+  - EAN-13, EAN-8
+  - Code 128, Code 39, Code 93
+  - Code 23 / Codabar
+  - ITF (Interleaved 2 of 5)
+  - UPC-A, UPC-E
+  - QR Code, Data Matrix, PDF417, Aztec
+- **Resultado visual inmediato** — Muestra nombre, nº de socio, categoría, marcaje, posición y estado de la entrada.
+- **Indicador de estado** — Retroalimentación visual de entrada válida, inválida o ya registrada.
 
-Llamada API usada por la app:
+---
 
-`https://www.qmobile.es/salerm/app/index.php?acc=1&terusu=USUARIO&tercon=CONTRASENA`
+## Tecnologías
 
-Ejemplo de respuesta valida:
+| Capa               | Tecnología                                 |
+| ------------------ | ------------------------------------------- |
+| Frontend           | HTML5 · CSS3 · JavaScript ES Modules      |
+| Bundler            | [Vite](https://vite.dev/) 5.x                  |
+| App nativa Android | [Capacitor](https://capacitorjs.com/) 7.x      |
+| Fuentes            | Google Fonts — Bebas Neue · Space Grotesk |
 
-`[{"TERBAN":1,"TERCOD":"TERMINAL01","TERNOM":"TERMINAL 1","TERCON":"CONTRASENA"}]`
-
-Reglas de validacion en cliente:
-
-- `TERBAN` debe ser `1`.
-- Si `TERCOD` viene informado, debe coincidir con el usuario (sin distinguir mayusculas/minusculas).
-- Si `TERCON` viene informado, debe coincidir con la contraseña.
-
-### 2) Lectura de entradas
-
-Opciones disponibles:
-
-- Introducir CCBB manualmente y pulsar "Leer CCBB".
-- Abrir camara con "Escanear" (modo codigo de barras).
-- Abrir camara con "Leer federacion" (modo OCR en zona guiada).
-- "Nuevo" para limpiar formulario y resultado.
-- "Salir" para cerrar sesion local.
-
-Llamada API usada por la app:
-
-`https://www.qmobile.es/salerm/app/index.php?acc=2&socnumccbb=CODIGO_LEIDO&tercod=TERCOD`
-
-Ejemplo de respuesta:
-
-`[{"TIP":0,"SOCBAN":1,"ENTBAN":1,"SOCNOM":"nombre","SOCNUM":"5051 (GENERAL)","MAREST":"(Alta)</span>","MARFECHOR":"09/04/2026 11:04:06","MARREP":0}]`
-
-Interpretacion de `MARREP`:
-
-- `0`: entrada valida sin usos previos.
-- `1`: entrada valida, ya usada una vez.
-- `>1`: entrada valida, usada multiples veces (aviso).
-
-Datos mostrados en pantalla:
-
-- N. socio (categoria)
-- Nombre
-- Marcaje
-- Posicion
-- Estado
+---
 
 ## Requisitos
 
-- Node.js 20 o superior
-- npm 10 o superior
+- **Node.js** 18 o superior
+- **Android Studio** (para compilar la app Android)
+- **JDK 17** o superior
 
-Para compilacion movil con Capacitor:
+---
 
-- Android Studio (Android)
-- Xcode (iOS, solo macOS)
-
-## Instalacion
+## Instalación y desarrollo
 
 ```bash
+# Instalar dependencias
 npm install
-```
 
-## Scripts
+# Servidor de desarrollo local
+npm run dev
 
-```bash
-npm run dev         # servidor Vite (puerto 5173)
-npm run build       # build web en dist
-npm run preview     # previsualizar build
-npm run cap:sync    # sincronizar proyecto Capacitor
-npm run cap:android # abrir Android Studio
-npm run cap:ios     # abrir Xcode
-```
-
-## Uso con Capacitor
-
-1. Generar build web:
-
-```bash
+# Compilar para producción y sincronizar con Android
 npm run build
+npx cap sync
 ```
 
-2. Sincronizar assets/plugins con Capacitor:
+---
+
+## Compilar la app Android
 
 ```bash
-npm run cap:sync
-```
-
-3. (Primera vez) agregar plataforma:
-
-```bash
-npx cap add android
-npx cap add ios
-```
-
-4. Abrir proyecto nativo:
-
-```bash
+# Abrir el proyecto en Android Studio
 npm run cap:android
-npm run cap:ios
 ```
 
-5. Generar APK (Android)
+Desde Android Studio: **Build → Generate Signed Bundle / APK** para obtener el instalador.  
+Copia el `.apk` resultante a la carpeta `releases/` con el nombre `salerm-app-vX.Y.Z.apk` y actualiza la tabla de versiones anterior.
 
-5.1 Desde Android Studio: Build > Build Bundle(s) / APK(s) > Build APK(s)
+---
 
-- Para APK debug, selecciona el build variant "debug".
-  Salida esperada: `android/app/build/outputs/apk/debug/app-debug.apk`
+## Estructura del proyecto
 
-- Para APK release, selecciona el build variant "release" y configura la firma con tu keystore.
-  Salida esperada: `android/app/build/outputs/apk/release/app-release-unsigned.apk`
-
-5.2 Por comandos Gradle, desde la raiz del proyecto:
-
-```bash
-cd android
-./gradlew assembleDebug
+```
+├── index.html              # Estructura HTML de la app
+├── src/
+│   ├── main.js             # Lógica principal (autenticación, escáner, API)
+│   └── styles.css          # Estilos
+├── media/
+│   ├── Puente Genil F.C.png
+│   └── Qanet.png
+├── android/                # Proyecto Android generado por Capacitor
+├── capacitor.config.ts     # Configuración de Capacitor
+└── vite.config.js          # Configuración de Vite
 ```
 
-Salida esperada:
+---
 
-`android/app/build/outputs/apk/debug/app-debug.apk`
+## API
 
-```bash
-cd android
-./gradlew assembleRelease
+La app se comunica con el endpoint:
+
+```
+https://www.qmobile.es/salerm/app/index.php
 ```
 
-Salida esperada:
+Los parámetros y la autenticación se gestionan desde `src/main.js`.
 
-`android/app/build/outputs/apk/release/app-release-unsigned.apk`
+---
 
-Nota: para publicar en Google Play, la APK/AAB de release debe firmarse con tu keystore.
+## Créditos
 
-## Notas de camara y permisos
-
-- En web, la camara requiere contexto seguro (HTTPS o localhost).
-- En app nativa, se solicita permiso de camara via plugin de Capacitor Camera.
-- Si no hay soporte de BarcodeDetector, el modo "Escanear" puede no estar disponible en algunos dispositivos/navegadores.
-
-## Stack y dependencias principales
-
-- Vite
-- Capacitor 7 (`@capacitor/core`, `@capacitor/android`, `@capacitor/cli`)
-- `@capacitor/camera` para permisos/capacidad de camara en nativo
-- `tesseract.js` para OCR en modo federacion
-
-## Estructura principal
-
-- `index.html`: layout de login y lector
-- `src/main.js`: logica de login, sesion, escaner y consultas API
-- `src/styles.css`: estilos responsive orientados a movil
-- `capacitor.config.ts`: configuracion de Capacitor (`webDir: dist`)
-- `vite.config.js`: servidor Vite en host abierto y puerto `5173`
+Desarrollado por **[Qanet - Redes y Componentes SL](https://www.qanet.es)**
+para el **Puente Genil F.C.
+Dev -** Javier Rider Jimenez

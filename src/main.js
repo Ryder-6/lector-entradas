@@ -1,6 +1,5 @@
 import { Capacitor } from '@capacitor/core';
 import { Camera } from '@capacitor/camera';
-import { createWorker } from 'tesseract.js';
 
 const API_BASE = 'https://www.qmobile.es/salerm/app/index.php';
 const SESSION_KEY = 'lectorEntradasSesion';
@@ -20,9 +19,8 @@ const resultCard = document.getElementById('result-card');
 const scannerPanel = document.getElementById('scanner-panel');
 const scannerVideo = document.getElementById('scanner-video');
 const scannerHint = document.getElementById('scanner-hint');
-const scannerGuide = document.getElementById('scanner-guide');
-const scannerGuideLabel = document.getElementById('scanner-guide-label');
 
+const rCodigo = document.getElementById('r-codigo');
 const rSocio = document.getElementById('r-socio');
 const rNombre = document.getElementById('r-nombre');
 const rMarcaje = document.getElementById('r-marcaje');
@@ -30,7 +28,6 @@ const rPosicion = document.getElementById('r-posicion');
 const rEstado = document.getElementById('r-estado');
 
 const btnScan = document.getElementById('btn-scan');
-const btnFederacion = document.getElementById('btn-federacion');
 const btnNuevo = document.getElementById('btn-nuevo');
 const btnSalir = document.getElementById('btn-salir');
 
@@ -39,21 +36,10 @@ let scannerDetector = null;
 let scannerActive = false;
 let scannerFrameId = 0;
 let scannerMode = 'barcode';
-let ocrActive = false;
-let ocrInProgress = false;
-let ocrTimeoutId = 0;
-let ocrWorkerPromise = null;
 let scannedCandidates = [];
 let currentCandidateIndex = 0;
 
 const SCANNER_MODE_BARCODE = 'barcode';
-const SCANNER_MODE_FEDERACION = 'federacion';
-const FEDERACION_OCR_AREA = {
-  left: 0.12,
-  top: 0.64,
-  width: 0.76,
-  height: 0.18
-};
 
 const READER_STATE_CLASSES = [
   'reader-state-neutral',
@@ -301,6 +287,7 @@ async function callApi(params) {
 
 function clearResult() {
   resultCard.hidden = true;
+  rCodigo.textContent = '-';
   rSocio.textContent = '-';
   rNombre.textContent = '-';
   rMarcaje.textContent = '-';
@@ -329,42 +316,13 @@ function updateScanButton() {
   btnScan.classList.add('btn-secondary');
 }
 
-function updateFederacionButton() {
-  if (!btnFederacion) return;
-
-  if (scannerActive && scannerMode === SCANNER_MODE_FEDERACION) {
-    btnFederacion.textContent = 'Cerrar federación';
-    btnFederacion.classList.remove('btn-secondary');
-    btnFederacion.classList.add('btn-danger', 'scan-active');
-    return;
-  }
-
-  btnFederacion.textContent = 'Leer federación';
-  btnFederacion.classList.remove('btn-danger', 'scan-active');
-  btnFederacion.classList.add('btn-secondary');
-}
-
 function updateScannerButtons() {
   updateScanButton();
-  updateFederacionButton();
-}
-
-function setScannerGuideMode(mode) {
-  if (!scannerGuide || !scannerGuideLabel) return;
-
-  const showGuide = scannerActive && mode === SCANNER_MODE_FEDERACION;
-  scannerGuide.hidden = !showGuide;
-  scannerGuideLabel.hidden = !showGuide;
 }
 
 function normalizeScannedValue(rawValue) {
   const value = String(rawValue ?? '').trim();
   if (!value) return '';
-
-  const federacionMatch = value.match(/\*\s*(\d{8})\s*\*/);
-  if (federacionMatch) {
-    return federacionMatch[1];
-  }
 
   try {
     const url = new URL(value);
@@ -442,132 +400,57 @@ function normalizeBarcodeDetection(barcode) {
     };
   }
 
-}
-
-function extractFederacionCode(text) {
-  const normalizedText = String(text ?? '')
-    .replace(/[\r\n]+/g, ' ')
-    .replace(/[＊✱✳]/g, '*')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  const match = normalizedText.match(/\*\s*(\d{8})\s*\*/);
-  return match ? match[1] : '';
-}
-
-async function getOcrWorker() {
-  if (!ocrWorkerPromise) {
-    ocrWorkerPromise = (async () => {
-      const worker = await createWorker('eng');
-      await worker.setParameters({
-        tessedit_char_whitelist: '*0123456789',
-        preserve_interword_spaces: '1'
-      });
-      return worker;
-    })();
+  if (format === 'code_39' || format === 'code_93') {
+    const normalized = rawValue.replace(/\s+/g, '');
+    if (normalized.length < 1) return null;
+    return {
+      value: normalizeScannedValue(normalized),
+      score: 75,
+      format
+    };
   }
 
-  return ocrWorkerPromise;
-}
-
-function captureFederacionArea() {
-  if (!scannerVideo || scannerVideo.videoWidth <= 0 || scannerVideo.videoHeight <= 0) {
-    return null;
+  if (format === 'ean_8') {
+    const normalized = rawValue.replace(/\s+/g, '');
+    if (normalized.length !== 8) return null;
+    return {
+      value: normalizeScannedValue(normalized),
+      score: 90,
+      format: 'ean_8'
+    };
   }
 
-  const sourceWidth = scannerVideo.videoWidth;
-  const sourceHeight = scannerVideo.videoHeight;
-  const cropX = Math.max(0, Math.floor(sourceWidth * FEDERACION_OCR_AREA.left));
-  const cropY = Math.max(0, Math.floor(sourceHeight * FEDERACION_OCR_AREA.top));
-  const cropWidth = Math.min(sourceWidth - cropX, Math.floor(sourceWidth * FEDERACION_OCR_AREA.width));
-  const cropHeight = Math.min(sourceHeight - cropY, Math.floor(sourceHeight * FEDERACION_OCR_AREA.height));
-
-  if (cropWidth <= 0 || cropHeight <= 0) {
-    return null;
+  if (format === 'upc_a' || format === 'upc_e') {
+    const normalized = rawValue.replace(/\s+/g, '');
+    if (normalized.length < 6) return null;
+    return {
+      value: normalizeScannedValue(normalized),
+      score: 85,
+      format
+    };
   }
 
-  const canvas = document.createElement('canvas');
-  canvas.width = cropWidth;
-  canvas.height = cropHeight;
-  const context = canvas.getContext('2d', { willReadFrequently: true });
-
-  if (!context) {
-    return null;
+  if (format === 'itf') {
+    const normalized = rawValue.replace(/\s+/g, '');
+    if (normalized.length < 1) return null;
+    return {
+      value: normalizeScannedValue(normalized),
+      score: 65,
+      format: 'itf'
+    };
   }
 
-  context.drawImage(scannerVideo, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
-  return canvas;
-}
-
-function stopFederacionOcr() {
-  ocrActive = false;
-  ocrInProgress = false;
-
-  if (ocrTimeoutId) {
-    clearTimeout(ocrTimeoutId);
-    ocrTimeoutId = 0;
-  }
-}
-
-function scheduleFederacionOcr(delay = 0) {
-  if (!ocrActive) {
-    return;
+  if (format === 'qr_code' || format === 'data_matrix' || format === 'pdf417' || format === 'aztec') {
+    const normalized = rawValue.trim();
+    if (!normalized) return null;
+    return {
+      value: normalizeScannedValue(normalized),
+      score: 80,
+      format
+    };
   }
 
-  if (ocrTimeoutId) {
-    clearTimeout(ocrTimeoutId);
-  }
-
-  ocrTimeoutId = window.setTimeout(() => {
-    void runFederacionOcr();
-  }, delay);
-}
-
-async function runFederacionOcr() {
-  if (!ocrActive || ocrInProgress || !scannerVideo) {
-    return;
-  }
-
-  if (scannerVideo.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
-    scheduleFederacionOcr(300);
-    return;
-  }
-
-  ocrInProgress = true;
-
-  try {
-    const canvas = captureFederacionArea();
-
-    if (!canvas) {
-      setScannerHint('No se pudo capturar la zona marcada.', true);
-      scheduleFederacionOcr(500);
-      return;
-    }
-
-    setScannerHint('Buscando *DDMMZAAA* en la zona marcada...');
-
-    const worker = await getOcrWorker();
-    const result = await worker.recognize(canvas);
-    const detectedCode = extractFederacionCode(result?.data?.text);
-
-    if (detectedCode) {
-      ccbbInput.value = detectedCode;
-      stopScanner();
-      setStatus(readerStatus, 'Texto de Federación detectado. Consultando entrada...');
-      readerForm.requestSubmit();
-      return;
-    }
-
-    setScannerHint('No se detectó el patrón. Ajusta el texto dentro del recuadro.');
-  } catch (error) {
-    setScannerHint(`No se pudo leer el texto: ${error.message}`, true);
-  } finally {
-    ocrInProgress = false;
-
-    if (ocrActive) {
-      scheduleFederacionOcr(900);
-    }
-  }
+  return null;
 }
 
 async function getCameraPermissionState() {
@@ -660,7 +543,6 @@ async function requestCameraPermission() {
 
 function stopScanner() {
   scannerActive = false;
-  stopFederacionOcr();
 
   if (scannerFrameId) {
     cancelAnimationFrame(scannerFrameId);
@@ -678,12 +560,11 @@ function stopScanner() {
   }
 
   if (scannerPanel) {
-    scannerPanel.hidden = true;
+    scannerPanel.setAttribute('hidden', '');
   }
 
   scannerMode = SCANNER_MODE_BARCODE;
   setScannerHint('Apunta la cámara al código.');
-  setScannerGuideMode(scannerMode);
   updateScannerButtons();
 }
 
@@ -725,7 +606,7 @@ async function scanCodes() {
   scannerFrameId = requestAnimationFrame(scanCodes);
 }
 
-async function startScanner(mode = SCANNER_MODE_BARCODE) {
+async function startScanner() {
   if (!window.isSecureContext) {
     setStatus(readerStatus, 'La cámara solo funciona en HTTPS o en la app instalada', true);
     return;
@@ -741,28 +622,30 @@ async function startScanner(mode = SCANNER_MODE_BARCODE) {
     return;
   }
 
-  if (mode === SCANNER_MODE_BARCODE && !('BarcodeDetector' in window)) {
+  if (!('BarcodeDetector' in window)) {
     setStatus(readerStatus, 'Este dispositivo no admite lectura automática de QR o barras', true);
     return;
   }
 
-  scannerMode = mode;
-
   try {
-    if (mode === SCANNER_MODE_BARCODE) {
-      const preferredFormats = ['ean_13', 'code_128', 'code_23'];
-      const supportedFormats = BarcodeDetector.getSupportedFormats
-        ? await BarcodeDetector.getSupportedFormats()
-        : preferredFormats;
+    const preferredFormats = [
+      'ean_13', 'ean_8',
+      'code_128', 'code_39', 'code_93',
+      'code_23', 'codabar',
+      'itf', 'upc_a', 'upc_e',
+      'qr_code', 'data_matrix', 'pdf417', 'aztec'
+    ];
+    const supportedFormats = BarcodeDetector.getSupportedFormats
+      ? await BarcodeDetector.getSupportedFormats()
+      : preferredFormats;
 
-      const detectorFormats = preferredFormats.filter((format) => supportedFormats.includes(format));
+    const detectorFormats = preferredFormats.filter((format) => supportedFormats.includes(format));
 
-      scannedCandidates = [];
-      currentCandidateIndex = 0;
-      scannerDetector = new BarcodeDetector({
-        formats: detectorFormats.length ? detectorFormats : preferredFormats
-      });
-    }
+    scannedCandidates = [];
+    currentCandidateIndex = 0;
+    scannerDetector = new BarcodeDetector({
+      formats: detectorFormats.length ? detectorFormats : preferredFormats
+    });
 
     scannerStream = await navigator.mediaDevices.getUserMedia({
       video: {
@@ -772,20 +655,13 @@ async function startScanner(mode = SCANNER_MODE_BARCODE) {
     });
 
     scannerVideo.srcObject = scannerStream;
-    scannerPanel.hidden = false;
+    if (scannerPanel.hasAttribute('hidden')) {
+      scannerPanel.removeAttribute('hidden');
+    }
     await scannerVideo.play();
 
     scannerActive = true;
-    setScannerGuideMode(scannerMode);
     updateScannerButtons();
-
-    if (mode === SCANNER_MODE_FEDERACION) {
-      ocrActive = true;
-      setScannerHint('Coloca el texto *DDMMZAAA* dentro del recuadro.');
-      setStatus(readerStatus, 'Lector de Federación activo');
-      scheduleFederacionOcr(250);
-      return;
-    }
 
     setScannerHint('Apunta la cámara a un código EAN-13.');
     setStatus(readerStatus, 'Escáner activo');
@@ -933,8 +809,9 @@ readerForm.addEventListener('submit', async (event) => {
       return;
     }
 
-    const viewData = normalizeApiData(parsed.data, ccbb);
+    const viewData = normalizeApiData(parsed.data, lastAttemptedCode);
 
+    rCodigo.textContent = cleanValue(lastAttemptedCode);
     rSocio.textContent = cleanValue(viewData.socio);
     rNombre.textContent = cleanValue(viewData.nombre);
     rMarcaje.textContent = cleanValue(viewData.marcaje);
@@ -942,6 +819,7 @@ readerForm.addEventListener('submit', async (event) => {
     rEstado.textContent = cleanValue(viewData.estado);
     resultCard.hidden = false;
     setReaderVisualState(viewData.visualState);
+    ccbbInput.value = '';
 
     if (viewData.visualState === 'invalid') {
       setStatus(readerStatus, 'Entrada inválida', true);
@@ -960,6 +838,9 @@ readerForm.addEventListener('submit', async (event) => {
     clearResult();
     setReaderVisualState('invalid');
     setStatus(readerStatus, `No se pudo leer CCBB: ${error.message}`, true);
+  } finally {
+    ccbbInput.value = '';
+    ccbbInput.focus();
   }
 });
 
@@ -975,22 +856,7 @@ btnScan.addEventListener('click', async () => {
     stopScanner();
   }
 
-  await startScanner(SCANNER_MODE_BARCODE);
-});
-
-btnFederacion.addEventListener('click', async () => {
-  if (scannerActive && scannerMode === SCANNER_MODE_FEDERACION) {
-    stopScanner();
-    setStatus(readerStatus, 'Lector de Federación detenido');
-    ccbbInput.focus();
-    return;
-  }
-
-  if (scannerActive) {
-    stopScanner();
-  }
-
-  await startScanner(SCANNER_MODE_FEDERACION);
+  await startScanner();
 });
 
 btnNuevo.addEventListener('click', () => {

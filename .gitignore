@@ -27,9 +27,16 @@ Thumbs.db
 # Capacitor generated files
 .capacitor/
 
+# Android app icon variants generated from media/Puente Genil F.C.png
+android/app/src/main/res/mipmap-*/ic_puentegenilfc*
+
 # Native build artifacts (keep native source tracked)
 android/.gradle/
 android/build/
 android/app/build/
 ios/DerivedData/
 ios/build/
+
+# APK releases (tracked intentionally in releases/)
+*.apk
+!releases/*.apk
